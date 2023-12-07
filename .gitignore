@@ -1,0 +1,53 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyo
+*.pyc
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# General
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Large Files
+*.zip
+*.gz
+*.rar
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.bz2
+*.xz
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp3
+*.mp4
+*.mov
+*.avi
+*.iso
+*.woff
+*.woff2
+*.eot
+*.ttf
+*.otf

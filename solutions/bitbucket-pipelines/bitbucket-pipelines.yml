@@ -1,0 +1,14 @@
+image: docker:20.10.11  # Choose an image based on your Docker needs
+
+pipelines:
+  default:
+    - step:
+        name: Deploy to EC2
+        deployment: production
+        script:
+          - apt-get update && apt-get install -y openssh-client
+          - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          - chmod 600 ~/.ssh/id_rsa
+          - ssh-keyscan -H your-ec2-ip-or-domain >> ~/.ssh/known_hosts
+          - scp -r ./your-docker-files/* ec2-user@your-ec2-ip-or-domain:/path/to/destination
+          - ssh ec2-user@your-ec2-ip-or-domain "cd /path/to/destination && docker-compose up -d"

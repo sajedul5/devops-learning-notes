@@ -51,6 +51,9 @@ server {
     listen 443 ssl;
     server_name ${DOMAIN_NAME};
 
+
+    underscores_in_headers on;
+
     # SSL configuration
     ssl_certificate ${CERT_PATH}/fullchain.pem;
     ssl_certificate_key ${CERT_PATH}/privkey.pem;
@@ -62,6 +65,10 @@ server {
 
     # Configure HSTS to force HTTPS
     add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains\" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Robots-Tag none;
 
     location / {
         # Proxy_pass configuration to your backend application
@@ -73,9 +80,9 @@ server {
         proxy_cache_bypass \$http_upgrade;
 
         # Additional proxy settings
-        # proxy_set_header X-Real-IP \$remote_addr;
-        # proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        # proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
     # Additional server configurations (e.g., error pages, access logs, etc.)

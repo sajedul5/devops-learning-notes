@@ -14,7 +14,8 @@ Retrieve the K3s Token on the Master Node
 
 Install K3s on the Worker Node
 
-=> curl -sfL https://get.k3s.io | K3S_URL=https://<master-node-ip>:6443 K3S_TOKEN=<token> sh -
+
+curl -sfL https://get.k3s.io | K3S_URL=https://your-master-ip:6443 K3S_TOKEN=your-token sh -
 
 
 Check K3s Installation on worker Node

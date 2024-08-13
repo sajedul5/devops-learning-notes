@@ -1,0 +1,6 @@
+Common Options for xargs
+-n N: Specifies the maximum number of arguments to pass to each command.
+-P N: Specifies the number of commands to run in parallel.
+-I {}: Allows you to specify a placeholder {} that will be replaced by the arguments from xargs.
+--max-args=N: Similar to -n N, limits the number of arguments per command.
+--max-procs=N: Similar to -P N, limits the number of parallel processes.

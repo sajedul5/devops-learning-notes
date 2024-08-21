@@ -1,0 +1,3 @@
+docker volume create myvol
+docker volume ls
+docker volume rm <v-name>

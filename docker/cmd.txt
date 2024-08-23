@@ -1,3 +1,5 @@
 docker volume create myvol
 docker volume ls
 docker volume rm <v-name>
+
+docker run -d --name voltest -v /mnt/f/DevOps/devops-learn/devops/docker/simpleproject/shakil nginx:latest

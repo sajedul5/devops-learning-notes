@@ -61,3 +61,29 @@ Print the DBCON environment variable that was set in the YAML file.
 ## Cleanup
 
     kubectl delete -f pod.yaml
+
+
+Let's use an Init container.
+
+## Create the deployment
+
+    kubectl apply -f init-container.yaml
+
+Wait for the main pod to come up
+
+    kubectl get pods
+
+## Connect to the Nginx container
+
+    kubectl exec -it init-demo -- /bin/bash
+
+## Hit the default webpage
+
+It should be the one downloaded by the Init container from https://www.google.com
+
+    curl localhost
+    exit
+
+## Cleanup
+
+    kubectl delete -f init-container.yaml

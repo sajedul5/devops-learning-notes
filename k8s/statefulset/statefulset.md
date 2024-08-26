@@ -40,7 +40,7 @@ Delete a pod and watch as it is recreated with the same name.
 
 Open a session in my-statefulset-2 and see if the file is still present.
 
-    kubectl exec my-statefulset-2 -it -- /bin/sh
+    kubectl exec my-statefulset-1 -it -- /bin/sh
     ls var/www
     exit
 

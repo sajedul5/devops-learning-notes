@@ -18,7 +18,7 @@ Let's output the same information in YAML format
 
 ## Connect to the Busybox
 
-    kubectl exec mybox -it -- /bin/sh
+    kubectl exec -it mybox  -- /bin/sh
 
 ## Display the CITY env variable
 

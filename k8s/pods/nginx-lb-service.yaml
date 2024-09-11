@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-loadbalancer
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 8000          # External port
+      targetPort: 80     # Internal port of the Nginx container
+  type: LoadBalancer    # Type of service to expose the Pod

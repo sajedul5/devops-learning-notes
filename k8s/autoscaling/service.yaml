@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 8000    # Change this line to expose port 8000
+      targetPort: 80 # The port the container is listening on
+  type: LoadBalancer

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: load-test
+spec:
+  containers:
+  - name: hey
+    image: rakyll/hey  
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        while true; do
+          hey -n 10000 -c 100 http://python-app-service.default.svc.cluster.local;
+          sleep 30;
+        done
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"

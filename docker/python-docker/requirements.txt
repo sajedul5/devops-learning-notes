@@ -1,2 +1,1 @@
-fastapi==0.75.0
-uvicorn==0.17.0
+flask>=2.0.0

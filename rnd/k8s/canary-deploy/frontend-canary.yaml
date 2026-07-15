@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-canary
+  namespace: app
+spec:
+  replicas: 1          # 🔥 only 1 pod
+  selector:
+    matchLabels:
+      app: frontend
+      version: canary
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: canary
+    spec:
+      containers:
+      - name: frontend
+        image: sajedul5/devops:frontend-canary
+        ports:
+        - containerPort: 3000
+        env:
+        - name: API_URL
+          value: "http://api.local"

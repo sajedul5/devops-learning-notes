@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-blue
+  namespace: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: blue
+    spec:
+      containers:
+      - name: frontend
+        image: sajedul5/devops:frontend-blue
+        ports:
+        - containerPort: 3000
+        env:
+        - name: API_URL
+          value: "http://api.local"

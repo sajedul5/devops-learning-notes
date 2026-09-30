@@ -52,3 +52,6 @@ Thumbs.db
 *.ttf
 *.otf
 *.json
+
+# Terraform variables (may hold real IDs)
+*.tfvars

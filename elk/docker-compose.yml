@@ -23,6 +23,8 @@ services:
   logstash:
     image: logstash:7.9.1
     container_name: logstash
+    environment:
+      - ES_PASSWORD=${ES_PASSWORD}  # set in your shell or a git-ignored .env file
     ports:
       - "5044:5044"
       - "9600:9600"

@@ -1,5 +1,5 @@
 resource "google_compute_network" "vpc_network" {
-  project                 = "your-gcp-project-id"
+  project                 = var.project_id
   name                    = "vpc-terraform"
   auto_create_subnetworks = false
   mtu                     = 1460

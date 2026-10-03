@@ -55,7 +55,7 @@ Work through the folders roughly in this order. Each step builds on the previous
 ## Quick start
 
 ```bash
-git clone https://github.com/sajedul5/devops.git && cd devops
+git clone https://github.com/sajedul5/devops-learning-notes.git && cd devops-learning-notes
 
 # 1. A throwaway Ubuntu VM with Docker + single-node Kubernetes (k3s).
 #    WARNING: wipes any existing Docker/k3s data on that machine.

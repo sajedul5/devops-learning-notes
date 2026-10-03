@@ -1,22 +1,27 @@
+# Generates continuous HTTP load against nginx-service so the HPA scales up.
+# (The old "rakyll/hey" image was removed from Docker Hub; busybox runs on every
+#  CPU architecture.) Delete this pod to stop the load and watch it scale down.
 apiVersion: v1
 kind: Pod
 metadata:
   name: load-test
 spec:
+  restartPolicy: Never
   containers:
-  - name: hey
-    image: rakyll/hey  
+  - name: load
+    image: busybox:1.36
     command: ["/bin/sh", "-c"]
     args:
       - |
-        while true; do
-          hey -n 10000 -c 100 http://python-app-service.default.svc.cluster.local;
-          sleep 30;
+        echo "Sending load to http://nginx-service:8000 with 50 parallel workers..."
+        for i in $(seq 50); do
+          while true; do wget -q -O /dev/null http://nginx-service:8000/; done &
         done
+        wait
     resources:
       requests:
         cpu: "250m"
-        memory: "128Mi"
+        memory: "64Mi"
       limits:
-        cpu: "500m"
-        memory: "256Mi"
+        cpu: "1"
+        memory: "128Mi"

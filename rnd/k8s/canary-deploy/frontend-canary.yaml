@@ -33,7 +33,7 @@ spec:
         - containerPort: 3000
         env:
         - name: API_URL
-          value: "http://api.local"
+          value: "http://api.app.svc.cluster.local"   # cluster DNS: <service>.<namespace>.svc.cluster.local
         resources:
           requests:
             cpu: "50m"

@@ -17,7 +17,7 @@ Let's now create a StafulSet.
 Open a session in my-statefulset-2 and create a file in the folder mapped to the volume.
 
     kubectl exec my-statefulset-2 -it -- /bin/sh
-    cd var/www
+    cd /usr/share/nginx/html        # this folder is the PersistentVolume
     echo Hello > hello.txt
 
 ## Modify the default Web page
@@ -40,8 +40,8 @@ Delete a pod and watch as it is recreated with the same name.
 
 Open a session in my-statefulset-2 and see if the file is still present.
 
-    kubectl exec my-statefulset-1 -it -- /bin/sh
-    ls var/www
+    kubectl exec my-statefulset-2 -it -- /bin/sh
+    ls /usr/share/nginx/html        # hello.txt survived the pod being recreated
     exit
 
 ## Cleanup

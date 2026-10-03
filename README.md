@@ -5,6 +5,9 @@ scripting, Docker, Kubernetes, Helm, Terraform (GCP), CI/CD, monitoring and logg
 It started as a personal learning log. It's organized so **another beginner can
 follow the same path** and pick up secure habits from the start.
 
+> **New here?** [LOCAL-SETUP.md](LOCAL-SETUP.md) shows how to run every lab on your
+> own computer (macOS, Windows or Linux) for free.
+>
 > **Read [SECURITY.md](SECURITY.md) first.** It explains why the code here avoids
 > hardcoded passwords, root containers and open ports, and how to do the same in
 > your own projects.
@@ -53,6 +56,8 @@ Work through the folders roughly in this order. Each step builds on the previous
 ```
 
 ## Quick start
+
+Full step-by-step instructions for every OS: **[LOCAL-SETUP.md](LOCAL-SETUP.md)**.
 
 ```bash
 git clone https://github.com/sajedul5/devops-learning-notes.git && cd devops-learning-notes

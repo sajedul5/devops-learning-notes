@@ -36,8 +36,9 @@ echo "<node-ip> app.local api.local" | sudo tee -a /etc/hosts
 curl http://app.local
 ```
 
-> Tip: inside the cluster, pods may not resolve `api.local`. Set
-> `API_URL=http://api.app.svc.cluster.local` to use cluster DNS instead.
+> The frontends call the API through cluster DNS
+> (`API_URL=http://api.app.svc.cluster.local`), not `api.local`. `api.local` only
+> exists in *your laptop's* hosts file, so pods can't resolve it.
 
 ## Blue-Green
 Both versions run at full size; the `frontend` Service selects `version: blue` or

@@ -2,7 +2,9 @@
 
 One folder per concept. Each has YAML manifests plus a `.md` file with the
 commands to run. Follow the order below. Any cluster works: k3s
-([`../setup-docker-k3s.sh`](../setup-docker-k3s.sh)), kind, minikube or Docker Desktop.
+([`../setup-docker-k3s.sh`](../setup-docker-k3s.sh)), k3d, kind, minikube or Docker Desktop.
+New to this? Follow [`../LOCAL-SETUP.md`](../LOCAL-SETUP.md) to get a cluster in
+minutes, including how to open each lab's app in your browser.
 
 | # | Lab | Concepts |
 |---|---|---|
@@ -18,6 +20,7 @@ commands to run. Follow the order below. Any cluster works: k3s
 | 10 | [configmaps/](configmaps/), [secrets/](secrets/) | configuration and credentials (**read the warnings in secrets/**) |
 | 11 | [volume/](volume/), [statefulset/](statefulset/) | PV/PVC, stable identity + storage |
 | 12 | [daemonset/](daemonset/), [job/](job/) | one pod per node, run-to-completion |
+| 12b | [nodes/](nodes/) | scheduling pods onto labelled nodes (`nodeSelector`) |
 | 13 | [resource-management/](resource-management/) | requests/limits, LimitRange, ResourceQuota |
 | 14 | [scale-pods/](scale-pods/), [autoscaling/](autoscaling/) | metrics-server, HPA, load testing |
 | 15 | [blue-green-deployment/](blue-green-deployment/) | zero-downtime releases (see also [`../rnd/`](../rnd/)) |

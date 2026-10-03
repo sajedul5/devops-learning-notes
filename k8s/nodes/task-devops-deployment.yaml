@@ -12,7 +12,10 @@ spec:
       labels:
         app: nginx
     spec:
-      nodeName: minikube-m02  # Ensure the pod runs on this node
+      # Schedule only onto nodes carrying this label (see nodes.md).
+      # Works on any cluster, unlike "nodeName", which hardcodes one node's name.
+      nodeSelector:
+        lab/role: web
       containers:
       - name: nginx
         image: nginx:1.27-alpine   # pin versions: ":latest" changes underneath you

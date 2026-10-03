@@ -32,7 +32,7 @@ spec:
 
         env:
         - name: API_URL
-          value: "http://api.local"
+          value: "http://api.app.svc.cluster.local"   # cluster DNS: <service>.<namespace>.svc.cluster.local
 
         livenessProbe:
           httpGet:

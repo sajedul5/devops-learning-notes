@@ -159,7 +159,8 @@ print_color "green" "---------------- Setup Web Server ------------------"
 
 # Install web server packages
 print_color "green" "Installing Web Server Packages .."
-sudo yum install -y httpd php php-mysql
+# php-mysqlnd on Rocky/Alma/RHEL 8+, php-mysql on CentOS 7
+sudo yum install -y httpd php php-mysqlnd || sudo yum install -y httpd php php-mysql
 
 # Configure firewalld rules
 print_color "green" "Configuring FirewallD rules.."

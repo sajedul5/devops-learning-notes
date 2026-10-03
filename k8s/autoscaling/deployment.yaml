@@ -18,9 +18,11 @@ spec:
         ports:
         - containerPort: 80
         resources:
+          # HPA % is measured against the CPU *request*. A small request makes the
+          # lab scale visibly; static nginx uses very little CPU per request.
           requests:
-            cpu: 200m
-            memory: 256Mi
+            cpu: 50m
+            memory: 32Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 200m
+            memory: 128Mi

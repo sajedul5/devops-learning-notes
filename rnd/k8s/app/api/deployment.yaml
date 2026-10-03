@@ -13,9 +13,20 @@ spec:
       labels:
         app: api
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000          # the "node" user in the node:*-alpine image
+        seccompProfile:
+          type: RuntimeDefault
+      automountServiceAccountToken: false   # app never talks to the K8s API
       containers:
       - name: api
         image: sajedul5/devops:api-v1
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         ports:
         - containerPort: 4000
 

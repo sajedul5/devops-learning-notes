@@ -1,2 +1,2 @@
-flask
-redis
+flask>=3.0,<4
+redis>=5.0,<6

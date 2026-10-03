@@ -16,10 +16,10 @@ spec:
     spec:
       containers:
       - name: my-container
-        image: nginx  
+        image: nginx:1.27-alpine
         volumeMounts:
         - name: my-storage
-          mountPath: /mnt/f/DevOps/devops-learn/devops/k8s/statefulset
+          mountPath: /usr/share/nginx/html
   volumeClaimTemplates:
   - metadata:
       name: my-storage

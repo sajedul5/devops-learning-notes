@@ -1,40 +1,99 @@
-# To create a system user or system account, run the following command
-sudo useradd \
-    --system \
-    --no-create-home \
-    --shell /bin/false prometheus
+#!/usr/bin/env bash
+#
+# Install Prometheus + Node Exporter as hardened systemd services (Ubuntu/Debian).
+#
+# Usage:
+#   sudo ./prometheus.sh
+#   sudo PROM_VERSION=3.1.0 NODE_EXPORTER_VERSION=1.8.2 ./prometheus.sh
+#   sudo PROM_LISTEN=0.0.0.0:9090 ./prometheus.sh   # expose UI on the network (see warning)
+#
+# Security defaults:
+#   - Both services run as dedicated no-login system users.
+#   - Downloads are verified against the official sha256 checksums.
+#   - Prometheus and Node Exporter have NO authentication, so by default they only
+#     listen on 127.0.0.1. Reach the UI with an SSH tunnel:
+#         ssh -L 9090:localhost:9090 user@server   then open http://localhost:9090
+#     If you set PROM_LISTEN=0.0.0.0:9090, firewall the port to trusted IPs only.
+#   - The /-/reload and /-/quit "lifecycle" API is NOT enabled; reload config with
+#     "systemctl reload prometheus" (sends SIGHUP) instead.
+#
+set -Eeuo pipefail
 
+PROM_VERSION="${PROM_VERSION:-3.1.0}"
+NODE_EXPORTER_VERSION="${NODE_EXPORTER_VERSION:-1.8.2}"
+PROM_LISTEN="${PROM_LISTEN:-127.0.0.1:9090}"
+NODE_EXPORTER_LISTEN="${NODE_EXPORTER_LISTEN:-127.0.0.1:9100}"
 
-# wget command to download Prometheus
-wget https://github.com/prometheus/prometheus/releases/download/v2.47.1/prometheus-2.47.1.linux-amd64.tar.gz
+die() { echo "ERROR: $*" >&2; exit 1; }
+[[ $EUID -eq 0 ]] || die "Please run as root (sudo $0)"
 
+case "$(uname -m)" in
+  x86_64)  ARCH=amd64 ;;
+  aarch64) ARCH=arm64 ;;
+  *) die "Unsupported architecture: $(uname -m)" ;;
+esac
 
-# extract all Prometheus files from the archive
-tar -xvf prometheus-2.47.1.linux-amd64.tar.gz
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
 
-# need a folder for Prometheus configuration files
-sudo mkdir -p /data /etc/prometheus
-# let's change the directory to Prometheus and move some files
-cd prometheus-2.47.1.linux-amd64/
-#  let's move the Prometheus binary and a promtool to the /usr/local/bin/. promtool is used to check configuration files and Prometheus rules
-sudo mv prometheus promtool /usr/local/bin/
-sudo mv consoles/ console_libraries/ /etc/prometheus/
-sudo mv prometheus.yml /etc/prometheus/prometheus.yml
-# To avoid permission issues, you need to set the correct ownership for the /etc/prometheus/ and data directory
-sudo chown -R prometheus:prometheus /etc/prometheus/ /data/
-prometheus --version
-prometheus --help
+# download_verified <github-repo> <version> <name>  -> extracts into $WORKDIR
+download_verified() {
+  local repo=$1 version=$2 name=$3
+  local tarball="${name}-${version}.linux-${ARCH}.tar.gz"
+  local base="https://github.com/prometheus/${repo}/releases/download/v${version}"
+  echo "Downloading ${tarball}..."
+  curl -fsSL -o "${WORKDIR}/${tarball}" "${base}/${tarball}"
+  curl -fsSL -o "${WORKDIR}/sha256sums-${name}.txt" "${base}/sha256sums.txt"
+  # Verify integrity: protects against corrupted or tampered downloads.
+  (cd "$WORKDIR" && grep " ${tarball}\$" "sha256sums-${name}.txt" | sha256sum -c -) \
+    || die "Checksum verification failed for ${tarball}"
+  tar -xzf "${WORKDIR}/${tarball}" -C "$WORKDIR"
+}
 
+create_system_user() {
+  id -u "$1" >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin "$1"
+}
 
-# need to create a Systemd unit configuration file
-sudo vim /etc/systemd/system/prometheus.service
+# ----------------------------------------------------------------------------
+# Prometheus
+# ----------------------------------------------------------------------------
+create_system_user prometheus
+download_verified prometheus "$PROM_VERSION" prometheus
+src="${WORKDIR}/prometheus-${PROM_VERSION}.linux-${ARCH}"
 
-# Prometheus.service
+install -m 0755 "${src}/prometheus" "${src}/promtool" /usr/local/bin/
+install -d -o prometheus -g prometheus -m 0750 /etc/prometheus /var/lib/prometheus
+
+# Keep an existing config on re-runs; only seed a default one the first time.
+if [[ ! -f /etc/prometheus/prometheus.yml ]]; then
+  cat > /etc/prometheus/prometheus.yml <<EOF
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["${PROM_LISTEN/0.0.0.0/localhost}"]
+
+  - job_name: node_exporter
+    static_configs:
+      - targets: ["${NODE_EXPORTER_LISTEN/0.0.0.0/localhost}"]
+
+  # Example: scrape Jenkins (requires the Jenkins "Prometheus metrics" plugin).
+  # - job_name: jenkins
+  #   metrics_path: /prometheus
+  #   static_configs:
+  #     - targets: ["<jenkins-ip>:8080"]
+EOF
+  chown prometheus:prometheus /etc/prometheus/prometheus.yml
+fi
+promtool check config /etc/prometheus/prometheus.yml
+
+cat > /etc/systemd/system/prometheus.service <<EOF
 [Unit]
 Description=Prometheus
 Wants=network-online.target
 After=network-online.target
-
 StartLimitIntervalSec=500
 StartLimitBurst=5
 
@@ -44,59 +103,36 @@ Group=prometheus
 Type=simple
 Restart=on-failure
 RestartSec=5s
-ExecStart=/usr/local/bin/prometheus \
-  --config.file=/etc/prometheus/prometheus.yml \
-  --storage.tsdb.path=/data \
-  --web.console.templates=/etc/prometheus/consoles \
-  --web.console.libraries=/etc/prometheus/console_libraries \
-  --web.listen-address=0.0.0.0:9090 \
-  --web.enable-lifecycle
+ExecStart=/usr/local/bin/prometheus \\
+  --config.file=/etc/prometheus/prometheus.yml \\
+  --storage.tsdb.path=/var/lib/prometheus \\
+  --storage.tsdb.retention.time=15d \\
+  --web.listen-address=${PROM_LISTEN}
+ExecReload=/bin/kill -HUP \$MAINPID
+
+# systemd sandboxing: limit what the process can touch if it is ever compromised
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/prometheus
 
 [Install]
 WantedBy=multi-user.target
+EOF
 
-# To automatically start the Prometheus after reboot, run enable.
-sudo systemctl enable prometheus
-sudo systemctl start prometheus
-sudo systemctl status prometheus
-# If you have any issues, check logs with journalctl
-journalctl -u prometheus -f --no-pager
+# ----------------------------------------------------------------------------
+# Node Exporter (host metrics: CPU, memory, disk, network)
+# ----------------------------------------------------------------------------
+create_system_user node_exporter
+download_verified node_exporter "$NODE_EXPORTER_VERSION" node_exporter
+install -m 0755 "${WORKDIR}/node_exporter-${NODE_EXPORTER_VERSION}.linux-${ARCH}/node_exporter" /usr/local/bin/
 
-# let's create a system user for Node Exporter by running the following command
-
-sudo useradd \
-    --system \
-    --no-create-home \
-    --shell /bin/false node_exporter
-
-# wget command to download the binary
-
-wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
-
-# Extract the node exporter from the archive
-tar -xvf node_exporter-1.6.1.linux-amd64.tar.gz
-
-# Move binary to the /usr/local/bin
-sudo mv \
-  node_exporter-1.6.1.linux-amd64/node_exporter \
-  /usr/local/bin/
-
-# delete node_exporter archive and a folder
-rm -rf node_exporter*
-
-# 
-node_exporter --version
-node_exporter --help
-
-# create a similar systemd unit file
-sudo vim /etc/systemd/system/node_exporter.service
-
-# node_exporter.service
+cat > /etc/systemd/system/node_exporter.service <<EOF
 [Unit]
 Description=Node Exporter
 Wants=network-online.target
 After=network-online.target
-
 StartLimitIntervalSec=500
 StartLimitBurst=5
 
@@ -106,45 +142,28 @@ Group=node_exporter
 Type=simple
 Restart=on-failure
 RestartSec=5s
-ExecStart=/usr/local/bin/node_exporter \
-    --collector.logind
+ExecStart=/usr/local/bin/node_exporter \\
+  --collector.logind \\
+  --web.listen-address=${NODE_EXPORTER_LISTEN}
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
+EOF
 
-# To automatically start the Node Exporter after reboot, enable the service
-sudo systemctl enable node_exporter
-sudo systemctl start node_exporter
-sudo systemctl status node_exporter
-# If you have any issues, check logs with journalctl
-journalctl -u node_exporter -f --no-pager
+systemctl daemon-reload
+systemctl enable --now prometheus node_exporter
+systemctl restart prometheus node_exporter
 
-
-# To create a static target, you need to add job_name with static_configs
-sudo vim /etc/prometheus/prometheus.yml
-
-# prometheus.yml
-  - job_name: node_export
-    static_configs:
-      - targets: ["localhost:9100"]
-# Before, restarting check if the config is valid
-promtool check config /etc/prometheus/prometheus.yml
-# Then, you can use a POST request to reload the config
-curl -X POST http://localhost:9090/-/reload
-http://<ip>:9090/targets
-
-
-#  To create a static target like jenkins, K8s cluster etc
-sudo vim /etc/prometheus/prometheus.yml
-
-  - job_name: 'jenkins'
-    metrics_path: '/prometheus'
-    static_configs:
-      - targets: ['<jenkins-ip>:8080']
-# Before, restarting check if the config is valid.
-promtool check config /etc/prometheus/prometheus.yml
-
-# Then, you can use a POST request to reload the config.
-curl -X POST http://localhost:9090/-/reload
-
-
+prometheus --version | head -1
+node_exporter --version 2>&1 | head -1
+echo
+echo "Prometheus UI:   http://${PROM_LISTEN}  (targets page: /targets)"
+echo "Node Exporter:   http://${NODE_EXPORTER_LISTEN}/metrics"
+echo "Edit scrape targets in /etc/prometheus/prometheus.yml, then:"
+echo "  promtool check config /etc/prometheus/prometheus.yml && systemctl reload prometheus"
+echo "Logs: journalctl -u prometheus -f --no-pager"

@@ -1,15 +1,40 @@
-# let's make sure that all the dependencies are installed
-sudo apt-get install -y apt-transport-https software-properties-common
-# Next, add the GPG key.
-wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
-# Add this repository for stable releases.
-echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
-# After you add the repository, update and install Garafana
-sudo apt-get update
-sudo apt-get -y install grafana
+#!/usr/bin/env bash
+#
+# Install Grafana OSS from the official APT repository (Ubuntu/Debian).
+#
+# Usage: sudo ./grafana.sh
+#
+# After install, open http://<server-ip>:3000 and log in with admin / admin.
+# Grafana FORCES you to change that password on first login — do it right away,
+# before exposing port 3000 to the internet. Better: put Grafana behind the
+# HTTPS reverse proxy from ../ssl/ssl.sh (APP_PORT=3000).
+#
+set -Eeuo pipefail
 
-# To automatically start the Grafana after reboot, enable the service
-sudo systemctl enable grafana-server
-sudo systemctl start grafana-server
-sudo systemctl status grafana-server
-http://<ip>:3000
+[[ $EUID -eq 0 ]] || { echo "Please run as root (sudo $0)" >&2; exit 1; }
+
+apt-get update
+apt-get install -y apt-transport-https software-properties-common wget gpg
+
+# Store the signing key in its own keyring and scope it to the Grafana repo only
+# ("signed-by"). The old "apt-key add" trusted the key for EVERY repository and
+# is deprecated.
+install -d -m 0755 /etc/apt/keyrings
+wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor --yes -o /etc/apt/keyrings/grafana.gpg
+chmod a+r /etc/apt/keyrings/grafana.gpg
+
+# ">" (not ">>") so re-running the script does not add duplicate entries.
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" \
+  > /etc/apt/sources.list.d/grafana.list
+
+apt-get update
+apt-get install -y grafana
+
+# Start now and on every boot.
+systemctl daemon-reload
+systemctl enable --now grafana-server
+systemctl --no-pager status grafana-server | head -5
+
+echo
+echo "Grafana is running on port 3000 — log in as admin/admin and change the password immediately."
+echo "Add Prometheus as a data source with URL http://localhost:9090"

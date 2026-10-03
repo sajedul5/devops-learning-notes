@@ -1,3 +1,15 @@
+# Canary via pod ratio
+# --------------------
+# The stable "frontend" Service (rnd/k8s/app/frontend/service.yaml) selects only
+# `app: frontend`, so it matches BOTH the stable pods and the canary pods
+# (`app: frontend, version: canary`). Traffic is therefore split by pod count:
+#   stable replicas = 3, canary replicas = 1  ->  ~25% of requests hit the canary.
+# Scale the canary up/down (or delete it) to shift traffic.
+#
+# The old `traefik.ingress.kubernetes.io/service-weights` annotation was removed:
+# it only existed in Traefik v1 and is silently ignored by Traefik v2+ (k3s).
+# For exact percentage weights use a Traefik `TraefikService` (weighted) CRD or
+# the ingress-nginx `nginx.ingress.kubernetes.io/canary-weight` annotation.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -5,9 +17,6 @@ metadata:
   namespace: app
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web
-    traefik.ingress.kubernetes.io/service-weights: |
-      frontend: 90
-      frontend-canary: 10
 spec:
   ingressClassName: traefik
   rules:

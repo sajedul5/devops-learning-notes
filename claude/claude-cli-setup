@@ -1,1 +1,28 @@
-mkdir -p ~/.local/bin ~/.claude-profiles/verbex-ai && printf '%s\n' '#!/bin/sh' 'export CLAUDE_CONFIG_DIR="$HOME/.claude-profiles/verbex-ai"' 'exec claude "$@"' > ~/.local/bin/claude-verbex-ai && chmod +x ~/.local/bin/claude-verbex-ai && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && export PATH="$HOME/.local/bin:$PATH"
+#!/bin/sh
+# Create a "claude-<profile>" launcher that runs Claude Code with its own config
+# directory, so separate accounts/orgs keep separate logins, history and settings.
+#
+# Usage: sh claude-cli-setup [profile-name]      (default: verbex-ai)
+# Safe to re-run: PATH lines are only added to your shell rc files once.
+set -eu
+
+PROFILE="${1:-verbex-ai}"
+BIN_DIR="$HOME/.local/bin"
+LAUNCHER="$BIN_DIR/claude-$PROFILE"
+
+mkdir -p "$BIN_DIR" "$HOME/.claude-profiles/$PROFILE"
+chmod 700 "$HOME/.claude-profiles/$PROFILE"   # contains auth tokens — keep it private
+
+printf '%s\n' '#!/bin/sh' \
+  "export CLAUDE_CONFIG_DIR=\"\$HOME/.claude-profiles/$PROFILE\"" \
+  'exec claude "$@"' > "$LAUNCHER"
+chmod +x "$LAUNCHER"
+
+# shellcheck disable=SC2016  # literal line written to rc files, expanded later by the shell
+PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
+for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  touch "$rc"
+  grep -qxF "$PATH_LINE" "$rc" || echo "$PATH_LINE" >> "$rc"
+done
+
+echo "Created $LAUNCHER. Open a new shell (or run: $PATH_LINE), then run: claude-$PROFILE"

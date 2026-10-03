@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read   # least privilege for the workflow token
+
+jobs:
+  secrets-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.21.2 \
+            dir /repo --config /repo/.gitleaks.toml --redact --verbose
+
+  shellcheck:
+    name: Shell scripts (shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Infra scripts are held to a strict standard. The bash_script/ exercises are
+      # beginner practice files, so only errors (not style warnings) fail there.
+      - name: Infra scripts
+        run: |
+          shellcheck setup-docker-k3s.sh ssl/ssl.sh jenkins/jenkins.sh \
+            monitoring-server/*.sh docker/docker-install.sh claude/claude-cli-setup \
+            bash_script/mini-project/*.sh
+      - name: Exercises (errors only)
+        run: find bash_script -name '*.sh' -print0 | xargs -0 shellcheck --severity=error
+
+  terraform:
+    name: Terraform fmt & validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
+  kubernetes:
+    name: Helm lint & manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: helm lint
+        run: for c in helm_chart/*/; do helm lint "$c"; done
+      - name: kubeconform
+        run: |
+          files=$(git ls-files 'k8s/*.yaml' 'rnd/k8s/*.yaml' nginx-test.yaml)
+          docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/yannh/kubeconform:v0.6.7 \
+            -strict -summary -ignore-missing-schemas $files

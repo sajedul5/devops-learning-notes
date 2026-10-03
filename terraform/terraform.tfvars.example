@@ -1,3 +1,4 @@
-# Copy to terraform.tfvars (git-ignored) and fill in
+# Copy to terraform.tfvars and fill in:  cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars is git-ignored, so your real IDs stay local.
 project_id = "your-gcp-project-id"
 region     = "us-central1"

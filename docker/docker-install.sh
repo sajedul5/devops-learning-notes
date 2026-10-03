@@ -19,16 +19,18 @@ install_docker() {
 }
 
 # Function to add user to Docker group
+# SECURITY: membership in the "docker" group is equivalent to root access on
+# this host (anyone who can talk to the Docker socket can mount / and become
+# root). Only add trusted users. Consider rootless Docker for shared machines:
+# https://docs.docker.com/engine/security/rootless/
 add_user_to_docker_group() {
   echo "Adding user to Docker group..."
-  sudo usermod -aG docker $USER
+  sudo usermod -aG docker "$USER"
 }
 
-# Function to set permissions on Docker socket
-set_docker_socket_permissions() {
-  echo "Setting permissions on Docker socket..."
-  sudo chmod 666 /var/run/docker.sock
-}
+# NOTE: Never run "chmod 666 /var/run/docker.sock". It lets EVERY local user
+# (and any compromised service) get root via Docker. Log out and back in (or
+# run "newgrp docker") so your group membership takes effect instead.
 
 # Function to show Docker version
 show_docker_version() {
@@ -43,7 +45,6 @@ then
 else
   install_docker
   add_user_to_docker_group
-  set_docker_socket_permissions
   echo "Docker installation and configuration complete. You may need to log out and log back in for the group changes to take effect."
 fi
 

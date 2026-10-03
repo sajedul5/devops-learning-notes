@@ -1,4 +1,6 @@
+import os
 import time
+
 import redis
 from flask import Flask
 
@@ -22,4 +24,6 @@ def hello():
     return "What's up Docker Deep Divers! You've visited me {} times.\n".format(count)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    # Never enable debug mode on a reachable host: the Werkzeug debugger allows
+    # remote code execution. Turn it on locally with FLASK_DEBUG=1 if needed.
+    app.run(host="0.0.0.0", debug=os.environ.get("FLASK_DEBUG") == "1")

@@ -1,5 +1,7 @@
-# Default Kibana configuration for docker target
+# Kibana configuration for the docker-compose stack.
+# Credentials are injected via environment variables (ELASTICSEARCH_USERNAME /
+# ELASTICSEARCH_PASSWORD) from elk/.env — never hardcode them here.
 server.name: kibana
-server.host: "0"
+server.host: "0.0.0.0"
 elasticsearch.hosts: [ "http://elasticsearch:9200" ]
 monitoring.ui.container.elasticsearch.enabled: true

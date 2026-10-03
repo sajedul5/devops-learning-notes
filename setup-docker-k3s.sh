@@ -44,6 +44,7 @@ exec > >(tee -a "$LOG") 2>&1
 trap 'die "Failed at line $LINENO"' ERR
 trap 'wait' EXIT   # let the tee child flush before we exit
 
+# shellcheck source=/dev/null
 . /etc/os-release
 [[ "$ID" == ubuntu ]] || die "Ubuntu only"
 case "$VERSION_ID" in
@@ -143,7 +144,7 @@ fi
 
 info "Waiting for API server..."
 api_up=0
-for i in {1..60}; do
+for _ in {1..60}; do
  if kubectl get nodes >/dev/null 2>&1; then api_up=1; break; fi
  sleep 5
 done

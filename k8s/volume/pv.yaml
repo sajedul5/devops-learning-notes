@@ -12,5 +12,6 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
+  # hostPath is for single-node labs only (see k8s/statefulset/pv.yaml).
   hostPath:
-    path: "/sajedul/"
+    path: "/mnt/data/pv001"

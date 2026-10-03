@@ -1,14 +1,23 @@
-image: docker:20.10.11  # Choose an image based on your Docker needs
+# Deploy a docker-compose app to an EC2 host over SSH.
+#
+# One-time setup in Bitbucket (Repository settings):
+#   1. Pipelines > SSH keys: generate (or add) a key pair. Bitbucket injects the
+#      private key into every build automatically — it never appears in this file.
+#      Add the PUBLIC key to ~/.ssh/authorized_keys of a dedicated deploy user on
+#      the server (not root, and with only the permissions it needs).
+#   2. On the same page, under "Known hosts", fetch and confirm the server's host
+#      key fingerprint. This pins the server identity and prevents man-in-the-middle
+#      attacks (running "ssh-keyscan" inside the build trusts whatever answers).
+#   3. Repository variables: DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH (not secrets,
+#      but keeping them out of the file makes the pipeline reusable).
+image: atlassian/default-image:4
 
 pipelines:
-  default:
-    - step:
-        name: Deploy to EC2
-        deployment: production
-        script:
-          - apt-get update && apt-get install -y openssh-client
-          - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          - chmod 600 ~/.ssh/id_rsa
-          - ssh-keyscan -H your-ec2-ip-or-domain >> ~/.ssh/known_hosts
-          - scp -r ./your-docker-files/* ec2-user@your-ec2-ip-or-domain:/path/to/destination
-          - ssh ec2-user@your-ec2-ip-or-domain "cd /path/to/destination && docker-compose up -d"
+  branches:
+    main:                       # deploy only from main, not from every branch
+      - step:
+          name: Deploy to EC2
+          deployment: production
+          script:
+            - scp -r ./your-docker-files/* "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+            - ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "cd '${DEPLOY_PATH}' && docker compose pull && docker compose up -d --remove-orphans"

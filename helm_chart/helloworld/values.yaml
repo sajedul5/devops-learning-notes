@@ -24,7 +24,9 @@ serviceAccount:
   # Specifies whether a service account should be created
   create: true
   # Automatically mount a ServiceAccount's API credentials?
-  automount: true
+  # false: this app never calls the Kubernetes API, so don't hand it a token
+  # an attacker could use after compromising the container.
+  automount: false
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
@@ -38,10 +40,15 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
+# The stock nginx image starts as root to bind port 80 and then drops to the
+# "nginx" user, so it needs a few capabilities. For a fully non-root setup use
+# the "nginxinc/nginx-unprivileged" image (port 8080) and uncomment below.
+securityContext:
+  allowPrivilegeEscalation: false
   # capabilities:
   #   drop:
   #   - ALL

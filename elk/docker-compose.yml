@@ -1,61 +1,81 @@
-version: '3'
+# Single-node ELK stack for LEARNING / LOCAL USE.
+# See README.md in this folder before running.
+#
+# Security notes:
+#  - Passwords come from the .env file (copy .env.example -> .env). Never commit .env.
+#  - Admin UIs/APIs are bound to 127.0.0.1 so they are NOT reachable from the network.
+#    Use an SSH tunnel or a reverse proxy with TLS + auth if you need remote access.
+#  - Only the Beats input (5044) listens on all interfaces, because remote Filebeat
+#    agents must reach it. Restrict it with a firewall to your agents' IPs.
 services:
   elasticsearch:
-    image: elasticsearch:7.9.1
+    image: elasticsearch:${ELK_VERSION:-7.17.25}
     container_name: elasticsearch
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "127.0.0.1:9200:9200"
     volumes:
-      - test_data:/usr/share/elasticsearch/data/
-      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - es_data:/usr/share/elasticsearch/data/
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     environment:
       - discovery.type=single-node
-      - http.host=0.0.0.0
-      - transport.host=0.0.0.0
-      - xpack.security.enabled=false
-      - xpack.monitoring.enabled=false
-      - cluster.name=elasticsearch
+      - xpack.security.enabled=true
+      # Sets the password of the built-in "elastic" superuser on first start.
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:?Set ELASTIC_PASSWORD in elk/.env}
       - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsu elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
     networks:
       - elk
 
   logstash:
-    image: logstash:7.9.1
+    image: logstash:${ELK_VERSION:-7.17.25}
     container_name: logstash
-    environment:
-      - ES_PASSWORD=${ES_PASSWORD}  # set in your shell or a git-ignored .env file
     ports:
-      - "5044:5044"
-      - "9600:9600"
+      - "5044:5044"            # Beats input — firewall this to known agent IPs
+      - "127.0.0.1:9600:9600"  # Logstash monitoring API — local only
+    environment:
+      # Referenced as ${ELASTIC_PASSWORD} inside logstash.conf
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:?Set ELASTIC_PASSWORD in elk/.env}
     volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ./logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ls_data:/usr/share/logstash/data
-
     networks:
       - elk
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
 
   kibana:
-    image: kibana:7.9.1
+    image: kibana:${ELK_VERSION:-7.17.25}
     container_name: kibana
     ports:
-      - "5601:5601"
+      - "127.0.0.1:5601:5601"
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:?Set ELASTIC_PASSWORD in elk/.env}
     volumes:
-      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml:ro
       - kb_data:/usr/share/kibana/data
     networks:
       - elk
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
 
 networks:
   elk:
     driver: bridge
 
 volumes:
-  test_data:
+  es_data:
   ls_data:
   kb_data:

@@ -13,8 +13,9 @@ services:
       - NODE_ENV=development
     ports:
       - 3001:80
-      - 9229:9229
-      - 9230:9230
+      # Node.js debugger ports: bound to localhost only (a debugger = remote code execution)
+      - 127.0.0.1:9229:9229
+      - 127.0.0.1:9230:9230
     secrets:
       - db-password
     volumes:

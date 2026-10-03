@@ -1,2 +1,5 @@
 cluster.name: "elasticsearch"
-network.host: localhost
+# Listen inside the container network; the host-side exposure is controlled
+# by the "ports:" mapping in docker-compose.yml (bound to 127.0.0.1).
+network.host: 0.0.0.0
+xpack.security.enabled: true

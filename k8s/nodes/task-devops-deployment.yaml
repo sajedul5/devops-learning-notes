@@ -15,6 +15,6 @@ spec:
       nodeName: minikube-m02  # Ensure the pod runs on this node
       containers:
       - name: nginx
-        image: nginx:latest
+        image: nginx:1.27-alpine   # pin versions: ":latest" changes underneath you
         ports:
         - containerPort: 80

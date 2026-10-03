@@ -1,37 +1,40 @@
-To set up a Bitbucket Pipeline for deploying a Dockerized application to an EC2 instance via SSH, you can follow these general steps. This assumes you have a Dockerized application and an EC2 instance available for deployment.
+# Bitbucket Pipelines → EC2 (Docker Compose) deployment
 
-Prerequisites:
-Bitbucket Repository Setup:
+Deploys a Dockerized app to an EC2 instance over SSH whenever `main` changes.
 
-Your Bitbucket repository contains the Dockerized application and a Dockerfile.
-EC2 Instance:
+```
+git push (main) ──▶ Bitbucket Pipeline ──scp/ssh──▶ EC2: docker compose up -d
+```
 
-Have an EC2 instance running with Docker installed.
-Ensure the instance is configured to allow SSH access.
-Steps:
-1. Generate SSH Key Pair:
-Generate an SSH key pair as mentioned in the previous response.
+## Prerequisites
+- An EC2 instance with Docker + the Compose plugin installed
+  (see [`../../setup-docker-k3s.sh`](../../setup-docker-k3s.sh) or [`../../docker/docker-install.sh`](../../docker/docker-install.sh)).
+- Security group allows SSH (22) **only from Bitbucket's IP ranges or your VPN**, not `0.0.0.0/0`.
+- A `docker-compose.yml` for your app in the repository.
 
-2. Add SSH Key to Bitbucket:
-Add the public key to your Bitbucket repository as mentioned in the previous response.
+## Setup
 
-3. Configure bitbucket-pipelines.yml:
-Create or modify the bitbucket-pipelines.yml file in your repository with the following content:
-Replace the placeholders (your-ec2-ip-or-domain, /path/to/destination, your-docker-files) with your actual values.
+1. **Create a deploy user on the server** (don't deploy as `root` or `ec2-user`):
+   ```bash
+   sudo useradd -m -s /bin/bash deploy
+   sudo usermod -aG docker deploy      # note: docker group == root-equivalent
+   sudo mkdir -p /opt/myapp && sudo chown deploy: /opt/myapp
+   ```
+2. **SSH key** — *Repository settings → Pipelines → SSH keys → Generate keys*.
+   Copy the **public** key into `/home/deploy/.ssh/authorized_keys`.
+   Bitbucket keeps the private key and injects it into builds; you never paste a
+   private key into a variable or a file.
+3. **Known hosts** — on the same page, enter the server host, click *Fetch*, and
+   verify the fingerprint matches `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`
+   on the server. This protects against man-in-the-middle attacks.
+4. **Repository variables** — `DEPLOY_HOST`, `DEPLOY_USER` (=`deploy`), `DEPLOY_PATH` (=`/opt/myapp`).
+   Mark anything sensitive as **Secured** so it's masked in logs.
+5. Copy [`bitbucket-pipelines.yml`](bitbucket-pipelines.yml) to your repo root, replace
+   `./your-docker-files/*` with your files, commit and push to `main`.
 
-4. Set Environment Variable in Bitbucket:
-In your Bitbucket repository, go to Settings > Repository settings > Pipeline > Repository settings and add an environment variable:
-
-Variable: SSH_PRIVATE_KEY
-Value: Paste the content of your private SSH key (~/.ssh/id_rsa).
-5. Docker Compose File:
-Ensure you have a docker-compose.yml file in your project that defines how your Dockerized application should run.
-
-6. Commit and Push:
-Commit and push the changes to your Bitbucket repository to trigger the pipeline.
-
-Important Notes:
-The example assumes you are using Docker Compose to manage your Docker containers. Modify the Docker-related commands based on your specific setup.
-Make sure Docker is installed on your EC2 instance and the Docker daemon is running.
-Ensure that your Docker Compose file and deployment script match your application's requirements.
-Be cautious with security, especially when dealing with private keys. Use Bitbucket Pipeline secrets for sensitive information.
+## Security checklist
+- [ ] No private keys, passwords or tokens in the YAML or the repo.
+- [ ] Host key pinned through *Known hosts* (no `ssh-keyscan` inside the build).
+- [ ] Dedicated, least-privilege deploy user.
+- [ ] Only `main` deploys to production; use the `deployment:` environment for approvals/restrictions.
+- [ ] App secrets live on the server in a `.env` file (mode `600`) or a secrets manager, never in git.

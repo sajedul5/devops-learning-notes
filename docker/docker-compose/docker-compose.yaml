@@ -3,8 +3,9 @@ services:
     build: .
     command: python app.py
     ports:
-      - 5050:5000
+      - "5050:5000"
   redis:
-    image: "redis:alpine"
-    ports:
-      - 6379
+    image: "redis:7-alpine"
+    # No "ports:" here on purpose: web-fe reaches Redis over the internal compose
+    # network as "redis:6379". Publishing 6379 would expose an unauthenticated
+    # Redis to anyone who can reach this host.

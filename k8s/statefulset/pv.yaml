@@ -9,4 +9,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /mnt/f/DevOps/devops-learn/devops/k8s/statefulset  
+    # hostPath = a directory on the node itself. Fine for single-node labs, but
+    # never use it in production: data is tied to one node, and hostPath can expose
+    # sensitive node files to pods. Use a StorageClass / CSI driver instead.
+    path: /mnt/data/statefulset  

@@ -1,0 +1,16 @@
+# gitleaks config: default rules plus a small allowlist for intentional,
+# clearly-fake demo values used for teaching.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Intentional demo/placeholder values"
+paths = [
+  '''k8s/secrets/secrets\.yaml''',                          # dummy base64 values, documented as demo-only
+  '''docker/simpleproject/.*/package-lock\.json''',
+  '''docker/simpleproject/.*/wwwroot/lib/.*''',              # vendored JS libraries
+  '''docker/simpleproject/result/views/.*\.min\.js''',
+]
+regexes = [
+  '''change-me-to-a-strong-password''',
+]

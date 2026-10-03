@@ -8,7 +8,7 @@
 
     docker compose up -d
 
-When the app will run, launch the voting app in your browser http://localhost:5000
+When the app will run, launch the voting app in your browser http://localhost:5050
 
 
 ## List the containers

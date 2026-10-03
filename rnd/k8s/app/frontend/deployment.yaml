@@ -13,9 +13,20 @@ spec:
       labels:
         app: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000          # the "node" user in the node:*-alpine image
+        seccompProfile:
+          type: RuntimeDefault
+      automountServiceAccountToken: false   # app never talks to the K8s API
       containers:
       - name: frontend
         image: sajedul5/devops:frontend-v1
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         ports:
         - containerPort: 3000
 
@@ -36,3 +47,10 @@ spec:
             port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "250m"
+            memory: "128Mi"

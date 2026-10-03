@@ -1,2 +1,3 @@
 http.host: 0.0.0.0
-xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+# Internal monitoring is disabled so Logstash does not need extra credentials.
+xpack.monitoring.enabled: false

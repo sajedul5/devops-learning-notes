@@ -15,11 +15,29 @@ spec:
         app: frontend
         version: blue
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000          # the "node" user in the node:*-alpine image
+        seccompProfile:
+          type: RuntimeDefault
+      automountServiceAccountToken: false   # app never talks to the K8s API
       containers:
       - name: frontend
         image: sajedul5/devops:frontend-blue
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         ports:
         - containerPort: 3000
         env:
         - name: API_URL
           value: "http://api.local"
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "250m"
+            memory: "128Mi"

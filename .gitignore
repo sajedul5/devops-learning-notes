@@ -1,57 +1,72 @@
-# Node.js
-node_modules/
-npm-debug.log
-yarn-error.log
+# ---------------------------------------------------------------------------
+# Secrets & credentials — never commit these (see SECURITY.md)
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*credentials*.json
+*service-account*.json
+kubeconfig
+*.kubeconfig
+password.txt
+*.secret
+*.secret.yaml
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.pyo
-*.pyc
-
-# Terraform
+# Terraform (state files can contain secrets in plain text)
 .terraform/
 *.tfstate
 *.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
 
-# General
+# ---------------------------------------------------------------------------
+# Build output & dependencies
+# ---------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-error.log*
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+bin/
+obj/
+target/
+*.class
+build/
+dist/
+
+# ---------------------------------------------------------------------------
+# Logs, backups, OS & editor files
+# ---------------------------------------------------------------------------
+*.log
+*.bak
+*.swp
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
 
-# Environment variables
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-
-# Large Files
+# Large binary files (keep the repo small; use releases or object storage)
 *.zip
 *.gz
 *.rar
 *.7z
 *.tar
-*.tar.gz
 *.tgz
 *.bz2
 *.xz
-*.jpg
-*.jpeg
-*.png
-*.gif
+*.iso
 *.mp3
 *.mp4
 *.mov
 *.avi
-*.iso
-*.woff
-*.woff2
-*.eot
-*.ttf
-*.otf
-*.json
-
-# Terraform variables (may hold real IDs)
-*.tfvars

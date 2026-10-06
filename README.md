@@ -133,3 +133,7 @@ pre-commit run --all-files
 Issues and PRs are welcome, especially fixes, clearer explanations and new labs.
 Please keep each lab self-contained with a short `.md`, pin image versions, and never
 commit credentials (the pre-commit hook will catch most of them).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
